@@ -1,0 +1,1 @@
+--sources src*.h --excluded_sources vctoolscrtvcstartup --excluded_sources vctoolscrtvcruntime --excluded_sources WindowsSDKInc --
