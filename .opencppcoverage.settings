@@ -1,1 +1,7 @@
---sources src*.h --excluded_sources vctoolscrtvcstartup --excluded_sources vctoolscrtvcruntime --excluded_sources WindowsSDKInc --
+sources=src
+excluded_sources=vctools
+excluded_sources=vctoolscrtvcstartup
+excluded_sources=vctoolscrtvcruntime
+excluded_sources=vcruntime
+excluded_sources=WindowsSDKInc
+excluded_sources=*catch_amalgamated*
