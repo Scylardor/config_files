@@ -46,16 +46,16 @@ EOF
 fi
 
 # Validate that clang-format doesn't need to be run on a file
-format_file() {
+validate_file_format() {
   local file="${1}"
   
   if [ ! -f "$file" ]; then
-    echo "Warning: File '$file' not found" >&2
+    echo "ClangFormatValidator error: File '$file' not found" >&2
     return 1
   fi
   
   if ! clang-format --dry-run --Werror -style=file "$file" 2>&0; then
-    echo "ClangFormat: $file needs to be formatted!" >&2
+    echo "ClangFormatValidator error: $file needs to be formatted!" >&2
     return 1
   fi
   
@@ -67,11 +67,17 @@ case "${1}" in
     echo "Runs clang-format on source files"
     ;;
   * )
+  
+	if ! [ -x "$(command -v clang-format)" ]; then
+		echo 'ClangFormatValidator error: clang-format is not installed, not found, or cannot be executed.' >&2
+		exit 1
+	fi
+  
     ret=0
     
     # Read files into array to handle filenames with spaces
     while IFS= read -r file; do
-      if ! format_file "$file"; then
+      if ! validate_file_format "$file"; then
         ret=1
       fi
     done < <(git diff-index --cached --name-only HEAD | grep -iE '\.(cpp|cc|h|hpp)$')
