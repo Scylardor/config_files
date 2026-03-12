@@ -54,7 +54,7 @@ validate_file_format() {
     return 1
   fi
   
-  if ! clang-format --dry-run --Werror -style=file "$file" 2>&0; then
+  if ! git show ":$file" | clang-format --dry-run --Werror --assume-filename="$file" 2>&0; then
     echo "ClangFormatValidator error: $file needs to be formatted!" >&2
     return 1
   fi
