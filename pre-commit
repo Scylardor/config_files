@@ -50,28 +50,47 @@ validate_file_format() {
   local file="${1}"
   
   if [ ! -f "$file" ]; then
-    echo "ClangFormatValidator error: File '$file' not found" >&2
+    echo "FormatValidator error: File '$file' not found" >&2
     return 1
   fi
   
-  if ! git show ":$file" | clang-format --dry-run --Werror --assume-filename="$file" 2>&0; then
-    echo "ClangFormatValidator error: $file needs to be formatted!" >&2
-    return 1
+  if is_cmake_file "$file"; then
+    if ! diff -q "$file" <(cmake-format "$file" 2>/dev/null) > /dev/null 2>&1; then
+      echo "FormatValidator error: $file needs to be formatted!" >&2
+      return 1
+    fi
+  else
+    if ! git show ":$file" | clang-format --dry-run --Werror --assume-filename="$file" 2>&1; then
+      echo "FormatValidator error: $file needs to be formatted!" >&2
+      return 1
+    fi
   fi
   
   return 0
 }
 
+is_cmake_file() {
+  local file="${1}"
+  local basename
+  basename="$(basename "$file")"
+  [[ "$basename" == "CMakeLists.txt" || "$file" == *.cmake ]]
+}
+
 case "${1}" in
   --about )
-    echo "Runs clang-format on source files"
+    echo "Runs clang-format / cmake-format on source files"
     ;;
   * )
   
-	if ! [ -x "$(command -v clang-format)" ]; then
-		echo 'ClangFormatValidator error: clang-format is not installed, not found, or cannot be executed.' >&2
-		exit 1
-	fi
+    if ! [ -x "$(command -v clang-format)" ]; then
+      echo 'FormatValidator error: clang-format is not installed, not found, or cannot be executed.' >&2
+      exit 1
+    fi
+
+    if ! [ -x "$(command -v cmake-format)" ]; then
+      echo 'FormatValidator error: cmake-format is not installed, not found, or cannot be executed.' >&2
+      exit 1
+    fi
   
     ret=0
     
@@ -80,11 +99,12 @@ case "${1}" in
       if ! validate_file_format "$file"; then
         ret=1
       fi
-    done < <(git diff-index --cached --name-only HEAD | grep -iE '\.(cpp|cc|h|hpp)$')
-	if [ $ret -ne 0 ]; then
-		exit 1
+    done < <(git diff-index --cached --name-only HEAD | grep -iE '\.(cpp|cc|h|hpp|cmake)$|CMakeLists\.txt')
+
+    if [ $ret -ne 0 ]; then
+      exit 1
     fi
-	;;
+    ;;
 esac
 
 # If there are whitespace errors, print the offending file names and fail.
