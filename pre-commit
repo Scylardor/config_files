@@ -60,7 +60,7 @@ validate_file_format() {
       return 1
     fi
   else
-    if ! git show ":$file" | clang-format --dry-run --Werror --assume-filename="$file" 2>&1; then
+    if ! git show ":$file" | clang-format --dry-run --Werror --assume-filename="$file" 2>/dev/null; then
       echo "FormatValidator error: $file needs to be formatted!" >&2
       return 1
     fi
@@ -99,7 +99,8 @@ case "${1}" in
       if ! validate_file_format "$file"; then
         ret=1
       fi
-    done < <(git diff-index --cached --name-only HEAD | grep -iE '\.(cpp|cc|h|hpp|cmake)$|CMakeLists\.txt')
+    # Use ACMR (Added, Copied, Modified, Renamed) filter to skip deleted files
+    done < <(git diff-index --cached --diff-filter=ACMR --name-only HEAD | grep -iE '\.(cpp|cc|h|hpp|cmake)$|CMakeLists\.txt')
 
     if [ $ret -ne 0 ]; then
       exit 1
